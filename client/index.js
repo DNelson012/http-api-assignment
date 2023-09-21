@@ -4,30 +4,52 @@ let pageSelect;
 let typeSelect;
 let sendButton;
 
+// Parse the response and display its body
 const handleResponse = async (response) => {
   switch(response.status) {
     case 200: 
       content.innerHTML = `<b>Success</b>`;
       break;
-    case 201:
-      content.innerHTML = `<b>Created</b>`;
-      break;
     case 400: 
       content.innerHTML = `<b>Bad Request</b>`;
       break;
+    case 401:
+      content.innerHTML = `<b>Unauthorized</b>`;
+      break;
+    case 403:
+      content.innerHTML = `<b>Forbidden</b>`;
+      break;
     case 404:
       content.innerHTML = `<b>Resource Not Found</b>`;
+      break;
+    case 500:
+      content.innerHTML = `<b>Internal Server Error</b>`;
+      break;
+    case 501:
+      content.innerHTML = `<b>Not Implemented</b>`;
       break;
     default: 
       content.innerHTML = `Error code not implemented by client.`;
       break;
   }
+
+  // Get the content type and determine how to parse it
+  const contentType = response.headers.get('Content-Type');
   
-  let obj = await response.json();
-  //let jsonString = JSON.stringify(obj);
-  content.innerHTML += `<p>Message: ${obj.message}</p>`;
+  if(contentType === 'application/json') {
+    let obj = await response.json();
+    console.log(JSON.stringify(obj));
+    content.innerHTML += `<p>Message: ${obj.message}</p>`;
+  } else if (contentType === 'text/xml') { 
+    let obj = await response.text();
+    console.log(obj);
+    const parsedResponse = new window.DOMParser().parseFromString(obj, 'text/xml');
+    const strMessage = parsedResponse.querySelector('message').textContent;
+    content.innerHTML += `<p>Message: ${strMessage}</p>`;
+  }
 };
 
+// When the buttn is clicked, fetch data from the server
 const requestUpdate = async () => {
   const page = pageSelect.value;
   const type = typeSelect.value;
@@ -42,6 +64,7 @@ const requestUpdate = async () => {
   handleResponse(response);
 };
 
+// Initialization
 const init = () => {
   console.log('index.js loaded');
   
